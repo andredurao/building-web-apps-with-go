@@ -9,6 +9,11 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type Book struct {
+	Title  string
+	Author string
+}
+
 func main() {
 	db := NewDB()
 	log.Println("Listening on :8080")
@@ -16,14 +21,20 @@ func main() {
 }
 
 func ShowBooks(db *sql.DB) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		var title, author string
-		err := db.QueryRow("SELECT title, author FROM books").Scan(&title, &author)
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {	
+		rows, err := db.Query("SELECT title, author FROM books")
 		if err != nil {
 			panic(err)
 		}
-
-		fmt.Fprintf(rw, "The first book is '%s' by '%s'", title, author)
+		result := []Book{}
+		for rows.Next(){
+			var row Book
+			err = rows.Scan(&row.Title, &row.Author)
+			if err != nil{
+				panic(err)
+			}
+			result = append(result, row)
+		}
 	})
 }
 
