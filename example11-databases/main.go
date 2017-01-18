@@ -2,11 +2,11 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
+	_ "github.com/mattn/go-sqlite3"
+	"html/template"
 	"log"
 	"net/http"
-
-	_ "github.com/mattn/go-sqlite3"
+	"path"
 )
 
 type Book struct {
@@ -17,33 +17,43 @@ type Book struct {
 func main() {
 	db := NewDB()
 	log.Println("Listening on :8080")
-	http.ListenAndServe(":8080", ShowBooks(db))
+	http.ListenAndServe(":8090", ShowBooks(db))
 }
 
-func ShowBooks(db *sql.DB) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {	
-		rows, err := db.Query("SELECT title, author FROM books")
+func GetBooksMap(db *sql.DB) []Book {
+	rows, err := db.Query("SELECT title, author FROM books")
+	if err != nil {
+		panic(err)
+	}
+	result := []Book{}
+	// Iterate through the records
+	for rows.Next() {
+		var row Book
+		// Scan title and author on row attribute references
+		err = rows.Scan(&row.Title, &row.Author)
 		if err != nil {
 			panic(err)
 		}
-		result := []Book{}
-		// Iterate through the records
-		for rows.Next(){
-			var row Book
-			// Scan title and author on row attribute references
-			err = rows.Scan(&row.Title, &row.Author)
-			if err != nil{
-				panic(err)
-			}
-			// Append the row on result map
-			result = append(result, row)
-			
-			// TODO: Iterate on the map at the view and render the results on a template
-			for i, value := range result {
-				fmt.Fprintf(rw, "<li>%d: '%s' by '%s'</li>\n", i, value.Title, value.Author)
-			}			
+		// Append the row on result map
+		result = append(result, row)
+	}
+	return result
+}
+
+func ShowBooks(db *sql.DB) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		books := GetBooksMap(db)
+		fp := path.Join("templates", "index.html")
+
+		tmpl, err := template.ParseFiles(fp)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		
+
+		if err := tmpl.Execute(rw, books); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
 	})
 }
 

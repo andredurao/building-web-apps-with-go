@@ -1,0 +1,8 @@
+<html>
+  <h1>Books</h1>
+  <ul>
+    {{range $k, $v := . }}
+      <li> {{$v.Author}} - {{$v.Title}}</li>
+    {{end}}
+  </ul>
+</html>
