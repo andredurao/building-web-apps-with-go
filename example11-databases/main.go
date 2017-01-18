@@ -27,14 +27,23 @@ func ShowBooks(db *sql.DB) http.Handler {
 			panic(err)
 		}
 		result := []Book{}
+		// Iterate through the records
 		for rows.Next(){
 			var row Book
+			// Scan title and author on row attribute references
 			err = rows.Scan(&row.Title, &row.Author)
 			if err != nil{
 				panic(err)
 			}
+			// Append the row on result map
 			result = append(result, row)
+			
+			// TODO: Iterate on the map at the view and render the results on a template
+			for i, value := range result {
+				fmt.Fprintf(rw, "<li>%d: '%s' by '%s'</li>\n", i, value.Title, value.Author)
+			}			
 		}
+		
 	})
 }
 
