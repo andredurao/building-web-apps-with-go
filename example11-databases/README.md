@@ -19,3 +19,5 @@ sqlite> SELECT * FROM books;
 Baudolino|Umberto Eco
 sqlite>
 ```
+
+Started a `Dockerfile` to learn how to dockerize apps like this.
